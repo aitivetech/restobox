@@ -19,7 +19,7 @@ if __name__ == "__main__":
 
     device = torch.device("cuda:1")
 
-    training_options = TrainingOptions(64,100,"./output",compile_model=True)
+    training_options = TrainingOptions(64,100,"./output",compile_model=True,use_amp=True)
     optimization_options = OptimizationOptions()
     export_options = ExportOptions()
 
@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     initial_scale = options.find_scale(0)
 
-    root = SRResNet(initial_scale.factor,3,3)
+    root = SRResNet(initial_scale.factor,3,3,base_channels=128,num_blocks=9)
     model = create_sr_model(root,initial_scale,device)
 
     dataset = ImageFolderDataset("/run/media/bglueck/Data/datasets/open-images-v7/images")

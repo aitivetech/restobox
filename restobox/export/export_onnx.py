@@ -27,8 +27,14 @@ def export_onnx(model: Model,
     output_names = [i[0] for i in model.outputs]
 
     dynamic_shapes = list()
+    dynamic_axes = dict()
+
     for idx,entry in enumerate(model.inputs):
         dynamic_shapes.append(create_dynamic_shape(entry[1], optimize))
+        dynamic_axes[entry[0]] = create_dynamic_shape(entry[1],False)
+
+    for idx,entry in enumerate(model.outputs):
+        dynamic_axes[entry[0]] = create_dynamic_shape(entry[1],False)
 
     input_samples = [i[1].create_random(device,dtype=dtype) for i in model.inputs]
 
@@ -47,7 +53,7 @@ def export_onnx(model: Model,
         torch.onnx.export(model.root,
                           args=tuple(input_samples),
                           f=path,
-                          dynamic_axes=dynamic_shapes,
+                          dynamic_axes=dynamic_axes,
                           input_names=input_names,
                           output_names=output_names,
                           opset_version=18,

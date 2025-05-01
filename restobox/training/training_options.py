@@ -13,7 +13,7 @@ class TrainingOptions:
 
     limit_steps: int | None = None
     num_workers: int = 4
-    prefetch_factor: int = 4
+    prefetch_factor: int = 2
     performance: PerformanceMode = PerformanceMode.FAST
     compile_model: bool = True
     compile_explain: bool = True

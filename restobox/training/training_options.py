@@ -30,3 +30,10 @@ class TrainingOptions:
     checkpoint_every_n_steps: int = 1000
     checkpoint_best: bool = True
     evaluate_every_n_steps: int = 1000
+
+    @property
+    def effective_dtype(self):
+        if self.use_amp:
+            return self.amp_dtype
+        else:
+            return torch.float32

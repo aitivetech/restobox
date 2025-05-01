@@ -44,6 +44,17 @@ class LayerNorm2d(torch.nn.Module):
     def forward(self, x):
         return LayerNormFunction.apply(x, self.weight, self.bias, self.eps)
 
+class LayerNorm2dNative(torch.nn.Module):
+    def __init__(self, num_channels, eps=1e-6):
+        super().__init__()
+        self.norm = torch.nn.LayerNorm(normalized_shape=num_channels, eps=eps)
+
+    def forward(self, x):
+        # x shape: [B, C, H, W]
+        x = x.permute(0, 2, 3, 1)  # [B, H, W, C]
+        x = self.norm(x)
+        return x.permute(0, 3, 1, 2)  # [B, C, H, W]
+
 class SimpleGate(torch.nn.Module):
     # noinspection PyMethodMayBeStatic
     def forward(self, x):
@@ -119,8 +130,8 @@ class NAFBlock(torch.torch.nn.Module):
             bias=True
         )
 
-        self.norm1 = LayerNorm2d(c)
-        self.norm2 = LayerNorm2d(c)
+        self.norm1 = LayerNorm2dNative(c)
+        self.norm2 = LayerNorm2dNative(c)
 
         self.dropout1 = torch.nn.Dropout(drop_out_rate) if drop_out_rate > 0. else torch.nn.Identity()
         self.dropout2 = torch.nn.Dropout(drop_out_rate) if drop_out_rate > 0. else torch.nn.Identity()

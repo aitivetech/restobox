@@ -58,7 +58,7 @@ class ImageTask(abc.ABC):
         self.device = device
 
         self.steps_per_epoch = len(dataset) // self.training_options.batch_size
-        self.total_steps = len(dataset) * self.training_options.epochs
+        self.total_steps = len(dataset) * self.training_options.epochs / self.training_options.batch_size
         self.num_items = len(dataset)
 
         self.run_id = "unknown_run"

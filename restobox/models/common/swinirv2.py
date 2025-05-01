@@ -715,9 +715,11 @@ class Swin2SR(nn.Module):
         self.img_range = img_range
         if in_chans == 3:
             rgb_mean = (0.4488, 0.4371, 0.4040)
-            self.mean = torch.Tensor(rgb_mean).view(1, 3, 1, 1)
+            self.register_buffer('mean', torch.Tensor(rgb_mean).view(1, 3, 1, 1))
+            #self.mean = torch.Tensor(rgb_mean).view(1, 3, 1, 1).to(dtype=dtype, device=device)
         else:
-            self.mean = torch.zeros(1, 1, 1, 1)
+            self.register_buffer('mean', torch.zeros(1, 1, 1, 1))
+            #self.mean = torch.zeros(1, 1, 1, 1).to(dtype=dtype,device=device)
         self.upscale = upscale
         self.upsampler = upsampler
         self.window_size = window_size
@@ -929,7 +931,7 @@ class Swin2SR(nn.Module):
         H, W = x.shape[2:]
         x = self.check_image_size(x)
 
-        self.mean = self.mean.type_as(x)
+        #self.mean = self.mean.type_as(x)
         x = (x - self.mean) * self.img_range
 
         if self.upsampler == 'pixelshuffle':

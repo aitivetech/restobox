@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     device = torch.device("cuda:1")
 
-    training_options = TrainingOptions(16,100,"./output",compile_model=False,use_amp=True)
+    training_options = TrainingOptions(16,100,"./output",compile_model=True,use_amp=True)
     optimization_options = OptimizationOptions()
     export_options = ExportOptions()
 

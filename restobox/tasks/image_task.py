@@ -237,17 +237,31 @@ class ImageTask(abc.ABC):
 
     def _evaluate(self, report_writer, input_batch, prediction_batch, truth_batch):
 
-        result = self.create_results(input_batch, truth_batch, prediction_batch)
-        images = {
-            "input": input_batch.to(dtype=torch.float32),
-            "truth": truth_batch.to(dtype=torch.float32),
-            "prediction": result.to(dtype=torch.float32)
-        }
-        baseline = self.create_baseline(input_batch, truth_batch)
-        if baseline is not None:
-            images["baseline"] = baseline.to(dtype=torch.float32)
+        def create_comparison(images: dict):
+            baseline = images["baseline"]  # shape: (B, C, H, W)
+            prediction = images["prediction"]
+            truth = images["truth"]
 
-        report_writer.update_images(self.epoch, self.step_in_epoch, self.global_step, images)
+            B = baseline.shape[0]
+
+            # Stack in order [baseline[i], prediction[i], truth[i]] for each i
+            interleaved = torch.stack([baseline, prediction, truth], dim=1)  # shape: (B, 3, C, H, W)
+            interleaved = interleaved.view(-1, *baseline.shape[1:])  # shape: (B*3, C, H, W)
+
+            return {"comparison": interleaved}
+
+        result = self.create_results(input_batch, truth_batch, prediction_batch)
+        baseline = self.create_baseline(input_batch, truth_batch)
+
+        images = dict()
+
+        if baseline is not None:
+            # Stack in order [baseline[i], prediction[i], truth[i]] for each i
+            interleaved = torch.stack([baseline, result, truth_batch], dim=1)  # shape: (B, 3, C, H, W)
+            interleaved = interleaved.view(-1, *baseline.shape[1:])
+            images["baseline,prediction,truth"] = interleaved
+
+        report_writer.update_images(self.epoch, self.step_in_epoch, self.global_step,images)
 
     def _update_metrics(self, report_writer, loss_value, prediction_batch, truth_batch):
         for metric in self.metrics:

@@ -1,4 +1,5 @@
 import torch
+from torch.hub import load_state_dict_from_url
 
 from restobox.models.model import Model
 from restobox.training.training_options import TrainingOptions
@@ -22,3 +23,14 @@ def prepare_model(model: Model,
         runtime_model.eval()
 
     return base_model,runtime_model
+
+def load_pretrained_state(model, map_location,url: str | None = None):
+    if model.url is None and url is None:
+        raise KeyError("No URL available for this model")
+
+    final_url = url if url is not None else model.url
+
+    state_dict = load_state_dict_from_url(
+        final_url, map_location=map_location, progress=True
+    )
+    model.load_state_dict(state_dict)

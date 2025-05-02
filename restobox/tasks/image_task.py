@@ -4,6 +4,7 @@ import os
 from typing import Any
 
 import kornia.losses
+import lpips
 import timm.optim
 import torch
 from torch import GradScaler
@@ -18,7 +19,7 @@ from restobox.diagnostics.profiler import Profiler
 from restobox.export.export_onnx import export_onnx, convert_fp16, convert_int8_dynamic
 from restobox.export.export_options import ExportOptions
 from restobox.losses.charbonnier_loss import CharbonnierLoss
-from restobox.losses.perceptual_loss import CombinedPerceptualLoss
+from restobox.losses.perceptual_loss import CombinedPerceptualLoss, LPipsAlex
 from restobox.metrics.external_metric import ExternalMetric
 from restobox.metrics.metric import Metric, CalculatedMetric
 from restobox.metrics.psnr_metric import PsnrMetric
@@ -181,7 +182,7 @@ class ImageTask(abc.ABC):
         pass
 
     def create_loss(self) -> torch.nn.Module:
-        return CombinedPerceptualLoss(perceptual_enabled=True,base_loss=kornia.losses.CharbonnierLoss(reduction='mean'))
+        return LPipsAlex()
 
     def create_results(self,
                        input_batch: torch.Tensor,
@@ -195,15 +196,15 @@ class ImageTask(abc.ABC):
         return None
 
     def create_optimizer(self, model: Model) -> torch.optim.Optimizer:
-        return timm.optim.Lion(model.root.parameters(), lr=self.optimization_options.base_lr,
-                               weight_decay=self.optimization_options.weight_decay,
-                               betas=self.optimization_options.betas)
+        #return timm.optim.Lion(model.root.parameters(), lr=self.optimization_options.base_lr,
+         #                      weight_decay=self.optimization_options.weight_decay,
+          #                     betas=self.optimization_options.betas)
 
-        #return AdamW(model.root.parameters(),
-         #            fused=True,
-          #           lr=self.optimization_options.base_lr,
-           #          weight_decay=self.optimization_options.weight_decay,
-            #         betas=self.optimization_options.betas)
+        return AdamW(model.root.parameters(),
+                     fused=True,
+                     lr=self.optimization_options.base_lr,
+                     weight_decay=self.optimization_options.weight_decay,
+                     betas=self.optimization_options.betas)
 
     def create_scheduler(self, model: Model, optimizer: torch.optim.Optimizer) -> torch.optim.lr_scheduler.LRScheduler:
         return ReduceLROnPlateau(optimizer, factor=0.1, patience=10)
@@ -261,7 +262,7 @@ class ImageTask(abc.ABC):
             interleaved = interleaved.view(-1, *baseline.shape[1:])
             images["baseline,prediction,truth"] = interleaved
 
-        report_writer.update_images(self.epoch, self.step_in_epoch, self.global_step,images)
+        report_writer.update_images(self.epoch, self.step_in_epoch, self.global_step, images)
 
     def _update_metrics(self, report_writer, loss_value, prediction_batch, truth_batch):
         for metric in self.metrics:

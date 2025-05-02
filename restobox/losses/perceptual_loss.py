@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from lpips import LPIPS
 from torchvision.models import vgg16, VGG16_Weights
 
 
@@ -10,6 +11,7 @@ class PerceptualLoss(nn.Module):
         vgg = vgg16(weights=VGG16_Weights.IMAGENET1K_V1).features[:layer_index].eval()
         for param in vgg.parameters():
             param.requires_grad = False
+
         self.vgg = vgg
 
     def forward(self, prediction : torch.Tensor, truth: torch.Tensor) -> torch.Tensor:
@@ -43,3 +45,11 @@ class CombinedPerceptualLoss(nn.Module):
     def set_perceptual(self, perceptual_enabled: True, perceptual_weight:float | None) -> None:
         self.perceptual_enabled = perceptual_enabled
         self.perceptual_weight = self.perceptual_weight if perceptual_weight is None else perceptual_weight
+
+class LPipsAlex(nn.Module):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.lpips = LPIPS(net='alex')
+
+    def forward(self, prediction: torch.Tensor, truth: torch.Tensor) -> torch.Tensor:
+        return self.lpips(prediction, truth).mean()

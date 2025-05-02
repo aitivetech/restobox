@@ -5,6 +5,7 @@ description = "Add your description here"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "kornia>=0.8.0",
+    "lpips>=0.1.4",
     "onnx>=1.17.0",
     "onnxconverter-common>=1.14.0",
     "onnxruntime>=1.21.1",

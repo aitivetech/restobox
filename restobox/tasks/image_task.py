@@ -8,6 +8,7 @@ import lpips
 import timm.optim
 import torch
 from torch import GradScaler
+from torch.nn import L1Loss, MSELoss
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from torch.utils.data import DataLoader
@@ -19,7 +20,8 @@ from restobox.diagnostics.profiler import Profiler
 from restobox.export.export_onnx import export_onnx, convert_fp16, convert_int8_dynamic
 from restobox.export.export_options import ExportOptions
 from restobox.losses.charbonnier_loss import CharbonnierLoss
-from restobox.losses.perceptual_loss import CombinedPerceptualLoss, LPipsAlex
+from restobox.losses.lpips_loss import LPipsAlex
+from restobox.losses.perceptual_loss import CombinedPerceptualLoss,ChainedLoss, ChainedLossEntry
 from restobox.metrics.external_metric import ExternalMetric
 from restobox.metrics.metric import Metric, CalculatedMetric
 from restobox.metrics.psnr_metric import PsnrMetric
@@ -182,7 +184,11 @@ class ImageTask(abc.ABC):
         pass
 
     def create_loss(self) -> torch.nn.Module:
-        return LPipsAlex()
+        return ChainedLoss([
+            ChainedLossEntry(L1Loss(), weight=1),
+            ChainedLossEntry(MSELoss(), weight=0.1),
+            ChainedLossEntry(LPipsAlex(), weight=0.1),
+        ])
 
     def create_results(self,
                        input_batch: torch.Tensor,

@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     device = torch.device("cuda:1")
 
-    training_options = TrainingOptions(32,100,"./output",compile_model=False,use_amp=True)
+    training_options = TrainingOptions(64,100,"./output",compile_model=True,use_amp=True)
     optimization_options = OptimizationOptions()
     export_options = ExportOptions()
 
@@ -38,9 +38,9 @@ if __name__ == "__main__":
     #root = swinir_real_sr_x8()
     #root = MIRNet_v2_SR(scale=initial_scale.factor)
     #root = SRFusion(scale=initial_scale.factor)
-    root = rcan(pretrained=True,scale=initial_scale.factor)
+    #root = rcan(pretrained=True,scale=initial_scale.factor)
     #root = Swin2SR(upscale=initial_scale.factor)
-    #root = NAFNetSR(initial_scale.factor)
+    root = NAFNetSR(initial_scale.factor)
     #root = SRResNet(initial_scale.factor,3,3,base_channels=128,num_blocks=9)
     model = create_sr_model(root,initial_scale,device)
 

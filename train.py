@@ -7,7 +7,7 @@ from restobox.export.export_options import ExportOptions
 from restobox.models.common.cosae import CosAE
 from restobox.models.common.fused import SRFusion
 from restobox.models.common.mirnetv2 import MIRNet_v2_SR
-from restobox.models.common.nafnet import NAFNetSR
+from restobox.models.common.nafnet2 import NAFNetSR
 from restobox.models.common.rcan import rcan
 from restobox.models.common.srresnet import SRResNet
 from restobox.models.common.swinir import swinir_real_sr_x8
@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     device = torch.device("cuda:1")
 
-    training_options = TrainingOptions(64,100,"./output",compile_model=True,use_amp=True)
+    training_options = TrainingOptions(64,100,"./output",compile_model=False,use_amp=True,profile=False)
     optimization_options = OptimizationOptions()
     export_options = ExportOptions()
 
@@ -41,12 +41,11 @@ if __name__ == "__main__":
     #root = rcan(pretrained=True,scale=initial_scale.factor)
     #root = Swin2SR(upscale=initial_scale.factor)
     root = NAFNetSR(initial_scale.factor)
-    #root = SRResNet(initial_scale.factor,3,3,base_channels=128,num_blocks=9)
+    #root = SRResNet(initial_scale.factor,3,3,base_channels=64,num_blocks=8)
     model = create_sr_model(root,initial_scale,device)
 
     dataset = ImageFolderDataset([
-        "/run/media/bglueck/Data/datasets/open-images-v7/images",
-        "/run/media/bglueck/Data/datasets/laion400m/images2"])
+        "/run/media/bglueck/Data/datasets/images_512x512"])
 
     task = SrImageTask(dataset,model,options,device)
 

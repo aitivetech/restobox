@@ -31,8 +31,12 @@ class SrImageTask(ImageTask):
         output_resize_size = mul_size(scale_factor.input_resize_size,scale_factor.factor)
 
         for item in items:
-            high_res = Tvtf.center_crop(item,list(output_crop_size))
-            high_res = Tvtf.resize(high_res,list(output_resize_size),interpolation=InterpolationMode.BICUBIC)
+
+            high_res = item
+
+            if item.shape[1] != output_resize_size[0] or item.shape[2] != output_resize_size[1]:
+                high_res = Tvtf.center_crop(high_res,list(output_crop_size))
+                high_res = Tvtf.resize(high_res,list(output_resize_size),interpolation=InterpolationMode.BICUBIC)
 
             low_res = Tvtf.resize(high_res,list(scale_factor.input_resize_size),interpolation=InterpolationMode.BICUBIC)
 

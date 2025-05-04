@@ -1,8 +1,10 @@
 import abc
+import os
 from typing import List, Sized
 
 import torch
 import torchvision
+import turbojpeg
 from PIL import Image
 from torch import dtype
 from torch.utils.data import Dataset
@@ -20,10 +22,13 @@ class ImageFolderDataset(ImageDataset):
                  mode: str | None = "RGB",
                  dtype: torch.dtype = torch.float32,
                  scale : bool = True,
+                 remove_invalid: bool = True,
                  extensions: List[str] | None = None) -> None:
         self.root_paths = root_paths
         self.mode = mode
         self.dtype = dtype
+        self.jpeg = turbojpeg.TurboJPEG()
+        self.remove_invalid = remove_invalid
 
         image_paths : list[str] = []
         root_paths = root_paths if isinstance(root_paths, list) else [root_paths]
@@ -41,9 +46,17 @@ class ImageFolderDataset(ImageDataset):
         return len(self.image_paths)
 
     def __getitem__(self, index: int) -> torch.Tensor:
+        return self.__get_item_pil(index)
+
+    def __get_item_pil(self, index: int) -> torch.Tensor:
         image = load_image_file(self.image_paths[index], self.mode)
 
         if image is None:
+
+            if self.remove_invalid:
+                if os.path.exists(self.image_paths[index]):
+                    os.remove(self.image_paths[index])
+
             return self.__getitem__(index + 1 % len(self.image_paths))
 
         return self.transform(image)

@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import List
 
 from restobox.tasks.image_task_options import ImageTaskOptions
+from restobox.tasks.task_options import TaskOptions
 
 def mul_size(size: tuple[int,int], factor: float | int) -> tuple[int,int]:
     return int(size[0] * factor), int(size[1] * factor)

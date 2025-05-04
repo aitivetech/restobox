@@ -32,7 +32,7 @@ from restobox.optimization.optimization_options import OptimizationOptions
 from restobox.reporting.progress_report_writer import ProgressReportWriter
 from restobox.reporting.report_writer import ChainedReportWriter
 from restobox.reporting.visdom_report_writer import VisdomReportWriter
-from restobox.tasks.image_task_options import ImageTaskOptions
+from restobox.tasks.task_options import TaskOptions
 from restobox.training import training_options
 from restobox.training.training_options import TrainingOptions
 from restobox.training.training_utilities import optimize_performance
@@ -40,11 +40,11 @@ from restobox.training.training_utilities import optimize_performance
 type Batch = tuple[torch.Tensor, torch.Tensor]
 
 
-class ImageTask(abc.ABC):
+class Task(abc.ABC):
     def __init__(self,
                  dataset: ImageDataset,
                  model: Model,
-                 options: ImageTaskOptions,
+                 options: TaskOptions,
                  device: torch.device) -> None:
         self.dataset = dataset
 
@@ -154,14 +154,14 @@ class ImageTask(abc.ABC):
                         self._update_metrics(report_writer, loss_value, prediction_batch, truth_batch)
 
                         if self.global_step % self.training_options.evaluate_every_n_steps == 0:
-                            self._evaluate(report_writer, input_batch, prediction_batch, truth_batch)
+                            self.evaluate(report_writer, input_batch, prediction_batch, truth_batch)
 
                             if not has_been_evaluated_once:
                                 self._explain_compilation(input_batch)
                                 has_been_evaluated_once = True
 
                         if self.global_step % self.training_options.checkpoint_every_n_steps == 0:
-                            self._perform_checkpoint(loss_value)
+                            self._update_checkpoints(loss_value)
 
                         if self.training_options.limit_steps is not None:
                             if self.step_in_epoch > self.training_options.limit_steps:
@@ -183,11 +183,13 @@ class ImageTask(abc.ABC):
     def create_batch(self, items) -> Batch:
         pass
 
+    @abc.abstractmethod
     def create_loss(self) -> torch.nn.Module:
-        return ChainedLoss([
-            ChainedLossEntry(L1Loss(), weight=1),
-            ChainedLossEntry(LPipsAlex(), weight=0.05),
-        ])
+        pass
+
+    @abc.abstractmethod
+    def create_metrics(self) -> list[Metric]:
+        pass
 
     def create_results(self,
                        input_batch: torch.Tensor,
@@ -224,8 +226,8 @@ class ImageTask(abc.ABC):
 
         return scheduler
 
-    def create_metrics(self) -> list[Metric]:
-        return [PsnrMetric(), SsimMetric()]
+    def evaluate(self, report_writer, input_batch, prediction_batch, truth_batch):
+        pass
 
     def get_export_model(self, model: Model) -> Model:
         return model
@@ -243,78 +245,15 @@ class ImageTask(abc.ABC):
         self.step_in_epoch = checkpoint['step_in_epoch']
         self.epoch = checkpoint['epoch']
 
-    def _perform_checkpoint(self, loss_value: float):
+    def _update_checkpoints(self, loss_value: float):
         directory = f"step_{self.global_step}_epoch_{self.epoch}"
-        self._save_model(loss_value, directory)
+        self._save_checkpoint(loss_value, directory)
 
         if loss_value < self.best_loss_value:
-            self._save_model(loss_value, "best")
+            self._save_checkpoint(loss_value, "best")
             self.best_loss_value = loss_value
 
-    def _evaluate(self, report_writer, input_batch, prediction_batch, truth_batch):
-
-        def create_comparison(images: dict):
-            baseline = images["baseline"]  # shape: (B, C, H, W)
-            prediction = images["prediction"]
-            truth = images["truth"]
-
-            B = baseline.shape[0]
-
-            # Stack in order [baseline[i], prediction[i], truth[i]] for each i
-            interleaved = torch.stack([baseline, prediction, truth], dim=1)  # shape: (B, 3, C, H, W)
-            interleaved = interleaved.view(-1, *baseline.shape[1:])  # shape: (B*3, C, H, W)
-
-            return {"comparison": interleaved}
-
-        result = self.create_results(input_batch, truth_batch, prediction_batch)
-        baseline = self.create_baseline(input_batch, truth_batch)
-
-        images = dict()
-
-        if baseline is not None:
-            # Stack in order [baseline[i], prediction[i], truth[i]] for each i
-            interleaved = torch.stack([baseline, result, truth_batch], dim=1)  # shape: (B, 3, C, H, W)
-            interleaved = interleaved.view(-1, *baseline.shape[1:])
-            images["baseline,prediction,truth"] = interleaved
-
-        report_writer.update_images(self.epoch, self.step_in_epoch, self.global_step, images)
-
-    def _update_metrics(self, report_writer, loss_value, prediction_batch, truth_batch):
-        for metric in self.metrics:
-            if isinstance(metric, CalculatedMetric):
-                metric.update(truth_batch, prediction_batch)
-        self.loss_metric.set_current_value(loss_value)
-
-        total_memory, free_memory = get_memory_info(self.device)
-        self.free_memory_metric.update_value(free_memory / 1024 / 1024)  # MB
-
-        report_writer.update(self.epoch, self.step_in_epoch, self.global_step, self.metrics)
-
-    def _get_output_path(self, *args):
-        return os.path.join(self.training_options.output_path, self.run_id, *args)
-
-    def _reset_metrics(self, reset_epoch: bool, reset_report: bool):
-        for metric in self.metrics:
-            metric.reset(reset_epoch=reset_epoch, reset_report=reset_report)
-
-    def _save_checkpoint(self, path: str) -> None:
-
-        self.train_model.copy_state_to(self.base_model)
-        self.ema_train_model.copy_state_to(self.ema_base_model)
-
-        checkpoint = {
-            'global_step': self.global_step,
-            'step_in_epoch': self.step_in_epoch,
-            'epoch': self.epoch,
-            'model_state_dict': self.base_model.state_dict,
-            'ema_model_state_dict': self.ema_base_model.state_dict,
-            'optimizer_state_dict': self.optimizer.state_dict(),
-            'scheduler_state_dict': self.scheduler.state_dict()
-        }
-
-        torch.save(checkpoint, path)
-
-    def _save_model(self, loss_value: float, directory: str):
+    def _save_checkpoint(self, loss_value: float, directory: str):
         self.train_model.copy_state_to(self.base_model)
         self.ema_train_model.copy_state_to(self.ema_base_model)
 
@@ -333,11 +272,25 @@ class ImageTask(abc.ABC):
         with open(os.path.join(base_path, 'manifest.json'), 'w') as f:
             json.dump(manifest_data, f, indent=4)
 
-        self._save_checkpoint(os.path.join(base_path, "checkpoint.pth"))
+        self._checkpoint_model(os.path.join(base_path, "checkpoint.pth"))
 
         if self.export_options.export:
             self._export_model(self.base_model, directory, 'train')
             self._export_model(self.ema_base_model, directory, 'ema')
+
+    def _checkpoint_model(self, path: str) -> None:
+
+        checkpoint = {
+            'global_step': self.global_step,
+            'step_in_epoch': self.step_in_epoch,
+            'epoch': self.epoch,
+            'model_state_dict': self.base_model.state_dict,
+            'ema_model_state_dict': self.ema_base_model.state_dict,
+            'optimizer_state_dict': self.optimizer.state_dict(),
+            'scheduler_state_dict': self.scheduler.state_dict()
+        }
+
+        torch.save(checkpoint, path)
 
     def _export_model(self, model: Model, directory: str, prefix: str):
         fp32_path = self._get_output_path('checkpoints', directory, f"export_{prefix}_fp32.onnx")
@@ -367,3 +320,22 @@ class ImageTask(abc.ABC):
             output_path = self._get_output_path('compilation_report.txt')
             with open(output_path, 'w') as f:
                 f.write(str(explanation))
+
+    def _update_metrics(self, report_writer, loss_value, prediction_batch, truth_batch):
+        for metric in self.metrics:
+            if isinstance(metric, CalculatedMetric):
+                metric.update(truth_batch, prediction_batch)
+        self.loss_metric.set_current_value(loss_value)
+
+        total_memory, free_memory = get_memory_info(self.device)
+        self.free_memory_metric.update_value(free_memory / 1024 / 1024)  # MB
+
+        report_writer.update(self.epoch, self.step_in_epoch, self.global_step, self.metrics)
+
+    def _get_output_path(self, *args):
+        return os.path.join(self.training_options.output_path, self.run_id, *args)
+
+    def _reset_metrics(self, reset_epoch: bool, reset_report: bool):
+        for metric in self.metrics:
+            metric.reset(reset_epoch=reset_epoch, reset_report=reset_report)
+

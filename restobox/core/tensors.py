@@ -46,6 +46,8 @@ class TensorLayout:
 
         return torch.rand(self.shape, device=device, dtype=actual_dtype)
 
+def create_image_batch_layout()
+
 def tensor_to_uint8_numpy(t: torch.Tensor) -> np.ndarray:
     """
     Converts a float32 torch tensor (B, C, H, W) with values in [0,1] (but possibly with outliers)

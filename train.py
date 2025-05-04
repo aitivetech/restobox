@@ -1,19 +1,8 @@
-from argparse import ArgumentParser
-
 import torch
 
 from restobox.data.image_dataset import ImageFolderDataset
 from restobox.export.export_options import ExportOptions
-from restobox.models.common.cosae import CosAE
-from restobox.models.common.fused import SRFusion
-from restobox.models.common.mirnetv2 import MIRNet_v2_SR
-from restobox.models.common.nafnet2 import NAFNetSR
-from restobox.models.common.rcan import rcan
-from restobox.models.common.srresnet import SRResNet
-from restobox.models.common.swinir import swinir_real_sr_x8
-from restobox.models.common.swinirv2 import Swin2SR
-from restobox.models.model import Model
-from restobox.models.sr.sr_utilities import create_sr_model
+from restobox.tasks.sr.sr_utilities import create_sr_model
 from restobox.optimization.optimization_options import OptimizationOptions
 from restobox.tasks.sr.sr_image_task import SrImageTask
 from restobox.tasks.sr.sr_image_task_options import SrImageTaskOptions, ScaleFactor
@@ -40,7 +29,7 @@ if __name__ == "__main__":
     #root = SRFusion(scale=initial_scale.factor)
     #root = rcan(pretrained=True,scale=initial_scale.factor)
     #root = Swin2SR(upscale=initial_scale.factor)
-    root = NAFNetSR(initial_scale.factor)
+    #root = NAFNetSR(initial_scale.factor)
     #root = SRResNet(initial_scale.factor,3,3,base_channels=64,num_blocks=8)
     model = create_sr_model(root,initial_scale,device)
 

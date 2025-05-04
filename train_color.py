@@ -2,6 +2,12 @@ import torch
 
 from restobox.data.image_dataset import ImageFolderDataset
 from restobox.export.export_options import ExportOptions
+from restobox.models.common.mirnetv2 import MIRNet_v2_DF
+from restobox.models.common.nafnet2 import NAFNet
+from restobox.models.common.swinir import swinir_real_sr_x8
+from restobox.tasks.color.color_image_task import ColorImageTask
+from restobox.tasks.color.color_image_task_options import ColorImageTaskOptions
+from restobox.tasks.color.color_image_task_utilities import create_color_model
 from restobox.tasks.sr.sr_image_task_utilities import create_sr_model
 from restobox.optimization.optimization_options import OptimizationOptions
 from restobox.tasks.sr.sr_image_task import SrImageTask
@@ -19,23 +25,14 @@ if __name__ == "__main__":
     optimization_options = OptimizationOptions()
     export_options = ExportOptions()
 
-    options = SrImageTaskOptions(training_options,optimization_options,export_options,
-                                 scales=[ScaleFactor.simple(8,64,0)])
+    color_options = ColorImageTaskOptions(training_options,optimization_options,export_options)
 
-    initial_scale = options.find_scale(0)
-
-    #root = swinir_real_sr_x8()
-    #root = MIRNet_v2_SR(scale=initial_scale.factor)
-    #root = SRFusion(scale=initial_scale.factor)
-    #root = rcan(pretrained=True,scale=initial_scale.factor)
-    #root = Swin2SR(upscale=initial_scale.factor)
-    #root = NAFNetSR(initial_scale.factor)
-    #root = SRResNet(initial_scale.factor,3,3,base_channels=64,num_blocks=8)
-    model = create_sr_model(root,initial_scale,device)
+    root = MIRNet_v2_DF(1,2)
+    model = create_color_model(root,color_options.use_lab,color_options.resize_size,device)
 
     dataset = ImageFolderDataset([
         "/run/media/bglueck/Data/datasets/images_512x512"])
 
-    task = SrImageTask(dataset,model,options,device)
+    task = ColorImageTask(dataset,model,color_options,device)
 
-    task.train("test01")
+    task.train("color_test01")

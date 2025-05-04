@@ -1,10 +1,12 @@
 import torch
 from kornia.color import rgb_to_lab, lab_to_rgb
 from torch import nn
+from torch.nn import L1Loss
 
 from restobox.data.image_dataset import ImageDataset
 from restobox.images.conversions import rgb_to_l_ab, l_ab_to_rgb
 from restobox.images.image_utilities import crop_and_resize
+from restobox.losses.charbonnier_loss import CharbonnierLoss
 from restobox.models.model import Model
 from restobox.tasks.color.color_image_task_options import ColorImageTaskOptions
 from restobox.tasks.image_task import ImageTask
@@ -37,6 +39,9 @@ class ColorImageTask(ImageTask):
                  device: torch.device) -> None:
         super().__init__(dataset, model, options, device)
         self.options = options
+
+    def create_loss(self) -> torch.nn.Module:
+        return CharbonnierLoss()
 
     def create_batch(self, items) -> Batch:
         inputs = []

@@ -46,7 +46,20 @@ class TensorLayout:
 
         return torch.rand(self.shape, device=device, dtype=actual_dtype)
 
-def create_image_batch_layout()
+def create_image_batch_layout(num_channels:int,
+                              size:tuple[int,int] = (1080,1920),
+                              size_dynamic:bool = True,
+                              max_size: tuple[int,int] = (1920*4,1080*4),
+                              max_batch_size: int = 1024,
+                              batch_dynamic: bool = True) -> TensorLayout:
+    result = TensorLayout([
+        TensorAxis(0,TensorAxisType.Batch,1,1,max_batch_size,batch_dynamic),
+        TensorAxis(1,TensorAxisType.Channel,num_channels,num_channels,num_channels,False),
+        TensorAxis(2,TensorAxisType.Height,size[0],32,max_size[0],size_dynamic),
+        TensorAxis(3,TensorAxisType.Width,size[1],32,max_size[1],size_dynamic),
+    ])
+
+    return result
 
 def tensor_to_uint8_numpy(t: torch.Tensor) -> np.ndarray:
     """

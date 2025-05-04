@@ -2,7 +2,7 @@ import torch
 
 from restobox.data.image_dataset import ImageFolderDataset
 from restobox.export.export_options import ExportOptions
-from restobox.tasks.sr.sr_utilities import create_sr_model
+from restobox.tasks.sr.sr_image_task_utilities import create_sr_model
 from restobox.optimization.optimization_options import OptimizationOptions
 from restobox.tasks.sr.sr_image_task import SrImageTask
 from restobox.tasks.sr.sr_image_task_options import SrImageTaskOptions, ScaleFactor

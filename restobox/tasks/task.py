@@ -182,8 +182,8 @@ class Task(abc.ABC):
     def create_results(self,
                        input_batch: torch.Tensor,
                        truth_batch: torch.Tensor,
-                       predictions_batch: torch.Tensor) -> torch.Tensor:
-        return predictions_batch
+                       predictions_batch: torch.Tensor) -> tuple[torch.Tensor,torch.Tensor]:
+        return predictions_batch,truth_batch
 
     def create_baseline(self,
                         input_batch: torch.Tensor,

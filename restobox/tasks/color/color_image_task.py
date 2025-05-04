@@ -63,12 +63,14 @@ class ColorImageTask(ImageTask):
     def create_results(self,
                        input_batch: torch.Tensor,
                        truth_batch: torch.Tensor,
-                       predictions_batch: torch.Tensor) -> torch.Tensor:
+                       predictions_batch: torch.Tensor) -> tuple[torch.Tensor,torch.Tensor]:
         if self.options.use_lab:
-            rgb = l_ab_to_rgb(input_batch, predictions_batch)
-            return rgb
+            rgb_prediction = l_ab_to_rgb(input_batch, predictions_batch)
+            rgb_truth = l_ab_to_rgb(input_batch,truth_batch)
 
-        return predictions_batch
+            return rgb_prediction,rgb_truth
+
+        return predictions_batch,truth_batch
 
     def get_export_model(self, model: Model) -> Model:
 

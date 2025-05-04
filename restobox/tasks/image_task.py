@@ -33,18 +33,18 @@ class ImageTask(Task):
 
     def evaluate(self, report_writer, input_batch, prediction_batch, truth_batch):
 
-        result = self.create_results(input_batch, truth_batch, prediction_batch)
+        result_prediction,result_truth = self.create_results(input_batch, truth_batch, prediction_batch)
         baseline = self.create_baseline(input_batch, truth_batch)
 
         images = dict()
 
         if baseline is not None:
-            interleaved = torch.stack([baseline, result, truth_batch], dim=1)  # shape: (B, 3, C, H, W)
+            interleaved = torch.stack([baseline, result_prediction, result_truth], dim=1)  # shape: (B, 3, C, H, W)
             interleaved = interleaved.view(-1, *baseline.shape[1:])
             images["baseline,prediction,truth"] = interleaved
         else:
-            interleaved = torch.stack([result, truth_batch], dim=1)  # shape: (B, 3, C, H, W)
-            interleaved = interleaved.view(-1, *result.shape[1:])
+            interleaved = torch.stack([result_prediction, result_truth], dim=1)  # shape: (B, 3, C, H, W)
+            interleaved = interleaved.view(-1, *result_prediction.shape[1:])
             images["prediction,truth"] = interleaved
 
         report_writer.update_images(self.epoch, self.step_in_epoch, self.global_step, images)

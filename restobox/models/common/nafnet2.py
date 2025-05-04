@@ -497,3 +497,18 @@ class NAFNetSR(torch.nn.Module):
         out = self.up(feats)
         out = out + inp_hr
         return out
+
+class NAFNetColor(nn.Module):
+    def __init__(self, out_channels=2,width=48, num_blks=16, drop_out_rate=0.):
+        super().__init__()
+        self.intro = nn.Conv2d(in_channels=1, out_channels=width, kernel_size=3, padding=1)
+        self.body = nn.Sequential(
+            *[NAFBlock(width, drop_out_rate=drop_out_rate) for _ in range(num_blks)]
+        )
+        self.outro = nn.Conv2d(in_channels=width, out_channels=out_channels, kernel_size=3, padding=1)
+
+    def forward(self, inp):
+        feats = self.intro(inp)
+        feats = self.body(feats)
+        out = self.outro(feats)
+        return out

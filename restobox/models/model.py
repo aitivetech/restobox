@@ -38,6 +38,9 @@ class Model:
     def load_state(self,state: Any)->None:
         self.root.load_state_dict(state)
 
+    def change_root(self,new_root: nn.Module) -> 'Model':
+        return Model(new_root,self.device,self.inputs,self.outputs,self.is_compiled)
+
     def clone(self,
               device: torch.device | None = None,
               dtype: torch.dtype | None = None) -> "Model":

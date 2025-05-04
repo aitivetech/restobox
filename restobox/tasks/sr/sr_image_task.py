@@ -1,15 +1,13 @@
 import torch
+import torchvision.transforms.v2.functional as Tvtf
 from torchvision.transforms import InterpolationMode
 
 from restobox.data.image_dataset import ImageDataset
-from restobox.export.export_options import ExportOptions
+from restobox.images.image_utilities import crop_and_resize
 from restobox.models.model import Model
-from restobox.optimization.optimization_options import OptimizationOptions
 from restobox.tasks.image_task import ImageTask, Batch
 from restobox.tasks.sr.sr_image_task_options import SrImageTaskOptions, mul_size
-from restobox.training.training_options import TrainingOptions
 
-import torchvision.transforms.v2.functional as Tvtf
 
 class SrImageTask(ImageTask):
 
@@ -32,12 +30,7 @@ class SrImageTask(ImageTask):
 
         for item in items:
 
-            high_res = item
-
-            if item.shape[1] != output_resize_size[0] or item.shape[2] != output_resize_size[1]:
-                high_res = Tvtf.center_crop(high_res,list(output_crop_size))
-                high_res = Tvtf.resize(high_res,list(output_resize_size),interpolation=InterpolationMode.BICUBIC)
-
+            high_res = crop_and_resize(item,output_crop_size,output_resize_size)
             low_res = Tvtf.resize(high_res,list(scale_factor.input_resize_size),interpolation=InterpolationMode.BICUBIC)
 
             high_res_items.append(high_res)

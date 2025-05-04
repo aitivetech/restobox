@@ -3,14 +3,10 @@ import json
 import os
 from typing import Any
 
-import kornia.losses
-import lpips
-import timm.optim
 import torch
 from torch import GradScaler
-from torch.nn import L1Loss, MSELoss
 from torch.optim import AdamW
-from torch.optim.lr_scheduler import ReduceLROnPlateau, OneCycleLR
+from torch.optim.lr_scheduler import OneCycleLR
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -18,23 +14,14 @@ from restobox.data.image_dataset import ImageDataset
 from restobox.diagnostics.memory import get_memory_info
 from restobox.diagnostics.profiler import Profiler
 from restobox.export.export_onnx import export_onnx, convert_fp16, convert_int8_dynamic
-from restobox.export.export_options import ExportOptions
-from restobox.losses.charbonnier_loss import CharbonnierLoss
-from restobox.losses.lpips_loss import LPipsAlex
-from restobox.losses.perceptual_loss import CombinedPerceptualLoss,ChainedLoss, ChainedLossEntry
 from restobox.metrics.external_metric import ExternalMetric
 from restobox.metrics.metric import Metric, CalculatedMetric
-from restobox.metrics.psnr_metric import PsnrMetric
-from restobox.metrics.ssim_metric import SsimMetric
 from restobox.models.model import Model
 from restobox.models.model_utilities import prepare_model
-from restobox.optimization.optimization_options import OptimizationOptions
 from restobox.reporting.progress_report_writer import ProgressReportWriter
 from restobox.reporting.report_writer import ChainedReportWriter
 from restobox.reporting.visdom_report_writer import VisdomReportWriter
 from restobox.tasks.task_options import TaskOptions
-from restobox.training import training_options
-from restobox.training.training_options import TrainingOptions
 from restobox.training.training_utilities import optimize_performance
 
 type Batch = tuple[torch.Tensor, torch.Tensor]
@@ -51,6 +38,7 @@ class Task(abc.ABC):
         if len(dataset) < 1:
             raise ValueError("Dataset is empty")
 
+        self.options = options
         self.training_options = options.training
         self.optimization_options = options.optimization
         self.export_options = options.export

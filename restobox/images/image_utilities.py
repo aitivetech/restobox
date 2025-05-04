@@ -1,7 +1,10 @@
 from typing import List
 
 import pillow_jxl
+import torch
 from PIL import Image
+import torchvision.transforms.v2.functional as Tvtf
+from torchvision.transforms import InterpolationMode
 
 from restobox.data.file_utilities import find_files_by_extensions
 
@@ -28,3 +31,10 @@ def load_image_file(image_path: str, mode: str | None = "RGB") -> Image.Image | 
         print(f"Warning: Failed to load image {image_path}. Skipping. Error: {e}")
         # Pick another random image instead
         return None
+
+def crop_and_resize(image: torch.Tensor,crop_size: tuple[int,int],resize_size: tuple[int,int]) -> torch.Tensor:
+    if image.shape[1] != resize_size[0] or image.shape[2] != resize_size[1]:
+        image = Tvtf.center_crop(image, list(crop_size))
+        image = Tvtf.resize(image, list(resize_size), interpolation=InterpolationMode.BICUBIC)
+
+    return image

@@ -35,4 +35,4 @@ if __name__ == "__main__":
 
     task = ColorImageTask(dataset,model,color_options,device)
 
-    task.train("color_test01")
+    task.train("color_test01") 

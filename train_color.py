@@ -21,13 +21,14 @@ if __name__ == "__main__":
 
     device = torch.device("cuda:1")
 
-    training_options = TrainingOptions(8,100,"./output",compile_model=False,use_amp=True,profile=False,evaluate_every_n_steps=10)
+    training_options = TrainingOptions(8,100,"./output",compile_model=False,use_amp=True,profile=False,checkpoint_every_n_steps=10)
     optimization_options = OptimizationOptions()
-    export_options = ExportOptions()
+    export_options = ExportOptions(optimize=False)
 
-    color_options = ColorImageTaskOptions(training_options,optimization_options,export_options)
+    color_options = ColorImageTaskOptions(training_options,optimization_options,export_options,resize_size=(256,256),use_lab=False)
 
-    root = NAFNetColor()
+    root = MIRNet_v2_DF(inp_channels=1,out_channels=2 if color_options.use_lab else 3)
+    #root = NAFNetColor(out_channels=3)
     model = create_color_model(root,color_options.use_lab,color_options.resize_size,device)
 
     dataset = ImageFolderDataset([

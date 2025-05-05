@@ -3,6 +3,7 @@ from kornia.color import rgb_to_lab, lab_to_rgb
 from torch import nn
 from torch.nn import L1Loss
 
+from restobox.core.tensors import create_image_batch_layout, clone_image_batch_layout
 from restobox.data.image_dataset import ImageDataset
 from restobox.images.conversions import rgb_to_l_ab, l_ab_to_rgb
 from restobox.images.image_utilities import crop_and_resize
@@ -30,6 +31,7 @@ class LabWrapper(nn.Module):
 
         rgb_output = lab_to_rgb(lab_output)
         return rgb_output.clamp(min=0, max=1.0)
+
 
 class ColorImageTask(ImageTask):
     def __init__(self,
@@ -77,6 +79,9 @@ class ColorImageTask(ImageTask):
         root = model.root
         if self.options.use_lab:
             root = LabWrapper(root)
-            return model.change_root(root)
+
+            new_input_layout = clone_image_batch_layout(model.inputs[0][1],3)
+            return Model(root,model.device,[(model.inputs[0][0],new_input_layout)],model.outputs,model.is_compiled)
+
         return model
 

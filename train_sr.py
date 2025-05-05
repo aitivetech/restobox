@@ -2,8 +2,8 @@ import torch
 
 from restobox.data.image_dataset import ImageFolderDataset
 from restobox.export.export_options import ExportOptions
-from restobox.models.common.mirnetv2 import MIRNet_v2_DF
-from restobox.models.common.nafnet2 import NAFNet
+from restobox.models.common.mirnetv2 import MIRNet_v2_DF, MIRNet_v2_SR
+from restobox.models.common.nafnet2 import NAFNet, NAFNetSR
 from restobox.models.common.swinir import swinir_real_sr_x8
 from restobox.tasks.color.color_image_task_options import ColorImageTaskOptions
 from restobox.tasks.sr.sr_image_task_utilities import create_sr_model
@@ -19,19 +19,19 @@ if __name__ == "__main__":
 
     device = torch.device("cuda:1")
 
-    training_options = TrainingOptions(64,100,"./output",compile_model=False,use_amp=True,profile=False)
+    training_options = TrainingOptions(64,100,"./output",compile_model=True,use_amp=True,profile=False)
     optimization_options = OptimizationOptions()
     export_options = ExportOptions()
 
     sr_options = SrImageTaskOptions(training_options,optimization_options,export_options,
-                                 scales=[ScaleFactor.simple(8,64,0)])
+                                 scales=[ScaleFactor.simple(4,64,0)])
 
     initial_scale = sr_options.find_scale(0)
 
 
 
-    root = swinir_real_sr_x8()
-    #root = MIRNet_v2_SR(scale=initial_scale.factor)
+    #root = swinir_real_sr_x8()
+    root = MIRNet_v2_SR(scale=initial_scale.factor)
     #root = SRFusion(scale=initial_scale.factor)
     #root = rcan(pretrained=True,scale=initial_scale.factor)
     #root = Swin2SR(upscale=initial_scale.factor)

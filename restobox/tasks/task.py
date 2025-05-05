@@ -119,6 +119,9 @@ class Task(abc.ABC):
 
                         prediction_batch = self.train_model.root(input_batch)
 
+                        if isinstance(prediction_batch,tuple):
+                            prediction_batch = prediction_batch[0]
+
                         loss = self.criterion(prediction_batch, truth_batch)
                         loss_value = loss.item()
 

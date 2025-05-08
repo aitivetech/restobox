@@ -505,7 +505,7 @@ class FeatureLoss(nn.Module):
         super(FeatureLoss, self).__init__()
         # Define the feature extraction model
         model = _FeatureExtractor(net_cfg_name, batch_norm, num_classes)
-        # Load the pre-trained model
+        # Load the pre-trained modelF
         if model_weights_path is None:
             model = models.vgg19(weights=models.VGG19_Weights.IMAGENET1K_V1)
         elif model_weights_path is not None and os.path.exists(model_weights_path):

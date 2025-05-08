@@ -2,10 +2,12 @@ import torch
 
 from restobox.data.image_dataset import ImageFolderDataset
 from restobox.export.export_options import ExportOptions
+from restobox.models.common.cosae import CosAESR, CosAE
 from restobox.models.common.mirnetv2 import MIRNet_v2_DF, MIRNet_v2_SR
 from restobox.models.common.nafnet2 import NAFNet, NAFNetSR
 from restobox.models.common.swin2sr_transformers import create_swin2sr
 from restobox.models.common.swinir import swinir_real_sr_x8
+from restobox.models.sr.drct import DRCT
 from restobox.tasks.color.color_image_task_options import ColorImageTaskOptions
 from restobox.tasks.sr.sr_image_task_utilities import create_sr_model
 from restobox.optimization.optimization_options import OptimizationOptions
@@ -20,20 +22,21 @@ if __name__ == "__main__":
 
     device = torch.device("cuda:1")
 
-    training_options = TrainingOptions(8,100,"./output",compile_model=True,use_amp=True,profile=False)
+    training_options = TrainingOptions(32,1000,"./output",compile_model=False,use_amp=True,profile=False)
     optimization_options = OptimizationOptions()
     export_options = ExportOptions()
 
-    input_size = 64
-    scale_factor = 8
+    input_size = 128
+    scale_factor = 4
 
     sr_options = SrImageTaskOptions(training_options,optimization_options,export_options,
                                  scales=[ScaleFactor.simple(scale_factor,input_size,0)])
 
     initial_scale = sr_options.find_scale(0)
 
-
-    root = create_swin2sr(initial_scale.input_size,initial_scale.factor)
+    #root = DRCT(image_size=initial_scale.input_size,upscale=initial_scale.factor)
+    root = CosAESR(CosAE(variant='s'),initial_scale.output_size)
+    #root = create_swin2sr(initial_scale.input_size,initial_scale.factor)
     #root = swinir_real_sr_x8()
     #root = MIRNet_v2_SR(scale=initial_scale.factor)
     #root = SRFusion(scale=initial_scale.factor)

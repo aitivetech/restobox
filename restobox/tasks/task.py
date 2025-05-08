@@ -138,7 +138,7 @@ class Task(abc.ABC):
 
                         self.train_model.update_ema(self.ema_train_model)
 
-                        self.scheduler.step(loss)
+                        self.scheduler.step()
 
                         profiler.step()
 

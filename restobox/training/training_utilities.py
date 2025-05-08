@@ -11,6 +11,7 @@ class PerformanceMode(StrEnum):
     FAST = 'fast'
 
 def optimize_performance(performance_mode: PerformanceMode):
+    print(f"Optimizing training performance: {performance_mode}")
     precision = 'highest'
 
     if performance_mode == PerformanceMode.FAST:
@@ -18,10 +19,13 @@ def optimize_performance(performance_mode: PerformanceMode):
     elif performance_mode == PerformanceMode.MEDIUM:
         precision = 'high'
 
+    print(f"Matmul precision: {precision}")
     torch.set_float32_matmul_precision(precision=precision)
 
     if performance_mode != PerformanceMode.SLOW:
+        print("Enabled cudnn benchmark and allow TF32")
         torch.backends.cudnn.benchmark = True
+        torch.backends.cudnn.allow_tf32 = True
 
 def disable_warnings():
     warnings.filterwarnings("ignore", message="the float32 number .* will be truncated to .*")

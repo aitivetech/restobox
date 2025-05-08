@@ -25,7 +25,7 @@ class ImageTask(Task):
     def create_loss(self) -> torch.nn.Module:
         return ChainedLoss([
             ChainedLossEntry(L1Loss(), weight=1),
-            ChainedLossEntry(LPipsAlex(), weight=0.1),
+            ChainedLossEntry(LPipsAlex(), weight=0.1,is_enabled=False),
         ])
 
     def create_metrics(self) -> list[Metric]:

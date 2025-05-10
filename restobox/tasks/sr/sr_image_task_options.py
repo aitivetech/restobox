@@ -13,6 +13,7 @@ class ScaleFactor:
     start_step: int
     input_resize_size: tuple[int,int]
     input_crop_size: tuple[int,int]
+    use_bsrgan: bool = True
 
     @property
     def output_size(self) -> tuple[int,int]:
@@ -38,6 +39,8 @@ class ScaleFactor:
 @dataclass(frozen=True)
 class SrImageTaskOptions(ImageTaskOptions):
     scales: List[ScaleFactor]
+    augment: bool = True
+
 
     def find_scale(self,step: int) -> ScaleFactor:
         for scaler in reversed(self.scales):

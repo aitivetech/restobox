@@ -1,5 +1,8 @@
+import math
 from typing import List
 
+import cv2
+import numpy as np
 import pillow_jxl
 import torch
 from PIL import Image
@@ -38,3 +41,11 @@ def crop_and_resize(image: torch.Tensor,crop_size: tuple[int,int],resize_size: t
         image = Tvtf.resize(image, list(resize_size), interpolation=InterpolationMode.BICUBIC)
 
     return image
+
+def np_uint_to_tensor4(img: np.ndarray) -> torch.Tensor:
+    if img.ndim == 2:
+        img = np.expand_dims(img, axis=2)
+    return torch.from_numpy(np.ascontiguousarray(img)).permute(2, 0, 1).float().div(255.).unsqueeze(0)
+
+
+

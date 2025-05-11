@@ -2,8 +2,10 @@ import torch
 from torch.nn import L1Loss
 
 from restobox.data.image_dataset import ImageDataset
+from restobox.losses.charbonnier_loss import CharbonnierLoss
 from restobox.losses.lpips_loss import LPipsAlex
-from restobox.losses.perceptual_loss import ChainedLoss, ChainedLossEntry
+from restobox.losses.mssim_loss import MSSIMLoss
+from restobox.losses.chained_loss import ChainedLoss, ChainedLossEntry
 from restobox.metrics.metric import Metric
 from restobox.metrics.psnr_metric import PsnrMetric
 from restobox.metrics.ssim_metric import SsimMetric
@@ -24,8 +26,9 @@ class ImageTask(Task):
 
     def create_loss(self) -> torch.nn.Module:
         return ChainedLoss([
-            ChainedLossEntry(L1Loss(), weight=1),
-            ChainedLossEntry(LPipsAlex(), weight=0.1,is_enabled=True),
+            ChainedLossEntry(CharbonnierLoss(), weight=1),
+            ChainedLossEntry(MSSIMLoss(),weight=1),
+            ChainedLossEntry(LPipsAlex(), weight=0.1,is_enabled=False),
         ])
 
     def create_metrics(self) -> list[Metric]:

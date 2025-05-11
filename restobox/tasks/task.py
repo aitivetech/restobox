@@ -3,7 +3,10 @@ import json
 import os
 from typing import Any
 
+import timm
 import torch
+from pytorch_optimizer import Ranger
+from timm.optim import Lion
 from torch import GradScaler
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import OneCycleLR
@@ -119,6 +122,9 @@ class Task(abc.ABC):
 
                         prediction_batch = self.train_model.root(input_batch)
 
+                        if isinstance(prediction_batch, tuple):
+                            prediction_batch = prediction_batch[0]
+
                         loss = self.criterion(prediction_batch, truth_batch)
                         loss_value = loss.item()
 
@@ -135,7 +141,7 @@ class Task(abc.ABC):
 
                         self.train_model.update_ema(self.ema_train_model)
 
-                        self.scheduler.step(loss)
+                        self.scheduler.step()
 
                         profiler.step()
 
@@ -182,8 +188,8 @@ class Task(abc.ABC):
     def create_results(self,
                        input_batch: torch.Tensor,
                        truth_batch: torch.Tensor,
-                       predictions_batch: torch.Tensor) -> torch.Tensor:
-        return predictions_batch
+                       predictions_batch: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        return predictions_batch, truth_batch
 
     def create_baseline(self,
                         input_batch: torch.Tensor,
@@ -191,9 +197,6 @@ class Task(abc.ABC):
         return None
 
     def create_optimizer(self, model: Model) -> torch.optim.Optimizer:
-        #return timm.optim.Lion(model.root.parameters(), lr=self.optimization_options.base_lr,
-         #                      weight_decay=self.optimization_options.weight_decay,
-          #                     betas=self.optimization_options.betas)
 
         return AdamW(model.root.parameters(),
                      fused=True,
@@ -326,4 +329,3 @@ class Task(abc.ABC):
     def _reset_metrics(self, reset_epoch: bool, reset_report: bool):
         for metric in self.metrics:
             metric.reset(reset_epoch=reset_epoch, reset_report=reset_report)
-

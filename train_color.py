@@ -3,7 +3,7 @@ import torch
 from restobox.data.image_dataset import ImageFolderDataset
 from restobox.export.export_options import ExportOptions
 from restobox.models.common.mirnetv2 import MIRNet_v2_DF
-from restobox.models.common.nafnet2 import NAFNet
+from restobox.models.common.nafnet2 import NAFNet, NAFNetColor
 from restobox.models.common.swinir import swinir_real_sr_x8
 from restobox.tasks.color.color_image_task import ColorImageTask
 from restobox.tasks.color.color_image_task_options import ColorImageTaskOptions
@@ -21,13 +21,14 @@ if __name__ == "__main__":
 
     device = torch.device("cuda:1")
 
-    training_options = TrainingOptions(64,100,"./output",compile_model=False,use_amp=True,profile=False)
+    training_options = TrainingOptions(8,100,"./output",compile_model=False,use_amp=True,profile=False,checkpoint_every_n_steps=10)
     optimization_options = OptimizationOptions()
-    export_options = ExportOptions()
+    export_options = ExportOptions(optimize=False)
 
-    color_options = ColorImageTaskOptions(training_options,optimization_options,export_options)
+    color_options = ColorImageTaskOptions(training_options,optimization_options,export_options,resize_size=(256,256),use_lab=False)
 
-    root = MIRNet_v2_DF(1,2)
+    root = MIRNet_v2_DF(inp_channels=1,out_channels=2 if color_options.use_lab else 3)
+    #root = NAFNetColor(out_channels=3)
     model = create_color_model(root,color_options.use_lab,color_options.resize_size,device)
 
     dataset = ImageFolderDataset([

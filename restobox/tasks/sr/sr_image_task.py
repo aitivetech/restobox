@@ -1,12 +1,16 @@
+import cv2
 import torch
 import torchvision.transforms.v2.functional as Tvtf
 from torchvision.transforms import InterpolationMode
 
 from restobox.data.image_dataset import ImageDataset
-from restobox.images.image_utilities import crop_and_resize
+from restobox.images.degradation_utilities import random_crop_np, random_rotate, \
+    random_horizontally_flip, random_vertically_flip, degradation_process_plus, image_to_tensor
 from restobox.models.model import Model
 from restobox.tasks.image_task import ImageTask, Batch
-from restobox.tasks.sr.sr_image_task_options import SrImageTaskOptions, mul_size
+from restobox.tasks.sr.sr_image_task_options import SrImageTaskOptions, mul_size, ScaleFactor
+
+
 
 
 class SrImageTask(ImageTask):
@@ -25,16 +29,27 @@ class SrImageTask(ImageTask):
         high_res_items: list[torch.Tensor] = []
         low_res_items: list[torch.Tensor] = []
 
-        output_crop_size = mul_size(scale_factor.input_crop_size,scale_factor.factor)
-        output_resize_size = mul_size(scale_factor.input_resize_size,scale_factor.factor)
-
         for item in items:
 
-            high_res = crop_and_resize(item,output_crop_size,output_resize_size)
-            low_res = Tvtf.resize(high_res,list(scale_factor.input_resize_size),interpolation=InterpolationMode.BICUBIC)
+            output_cropped = random_crop_np(item,scale_factor.output_size[0])
 
-            high_res_items.append(high_res)
-            low_res_items.append(low_res)
+            if self.options.augment:
+                output_cropped = random_rotate(output_cropped, [90, 180, 270])
+                output_cropped = random_horizontally_flip(output_cropped, 0.5)
+                output_cropped = random_vertically_flip(output_cropped, 0.5)
+
+            output_cropped = cv2.cvtColor(output_cropped, cv2.COLOR_BGR2RGB)
+
+            if scale_factor.use_bsrgan:
+                lr_cropped =  degradation_process_plus(output_cropped, int(scale_factor.factor),gray_prob=0.0)
+            else:
+                lr_cropped = cv2.resize(output_cropped,scale_factor.input_size,interpolation=cv2.INTER_CUBIC)
+
+            lr = image_to_tensor(lr_cropped,False,False)
+            hr = image_to_tensor(output_cropped,False,False)
+
+            high_res_items.append(hr)
+            low_res_items.append(lr)
 
         return torch.stack(low_res_items),torch.stack(high_res_items)
 
@@ -43,3 +58,4 @@ class SrImageTask(ImageTask):
                         truth_batch: torch.Tensor) -> torch.Tensor | None:
         scale_factor = self.options.find_scale(self.global_step)
         return Tvtf.resize(input_batch,list(scale_factor.output_size),interpolation=InterpolationMode.BICUBIC)
+
